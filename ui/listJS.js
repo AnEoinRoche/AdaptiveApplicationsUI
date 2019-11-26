@@ -6,7 +6,7 @@ function getData(time, userId){
     xhttp.onreadystatechange = function(){
         if(this.readyState == 4 && this.status == 200){
             recommendations = JSON.parse(this.responseText);
-            createList(recommendations, time);
+            createList(recommendations, time, userId);
         }
     }
 }
@@ -27,11 +27,41 @@ function getUserModel(userId){
     userModel.send();
     userModel.onreadystatechange = function(){
         if(this.readyState == 4 && this.status == 200){
-            var userModel = JSON.parse(this.responseText);              
+            var userModel = JSON.parse(this.responseText); 
+            createUserModelPage(userModel);
+                  
         }
     }
 }
-function createList(json, time){
+
+function createUserModelPage(userModel){
+    var i;
+    for(i in userModel.userPurchaseModelAlgorithmic){
+        var obj = userModel.userPurchaseModelAlgorithmic[i];
+        var tr = document.createElement("tr");
+        var itemCol = createListCol(obj.Product_Name);
+        var sizeCol = createListCol(obj.Size);
+        var freqCol = createListCol(obj.Purchase_Freq);
+        tr.appendChild(itemCol);
+        tr.appendChild(sizeCol);
+        tr.appendChild(freqCol);
+        document.getElementById("algoListBody").appendChild(tr);
+        
+    }
+    for(i in userModel.userPurchaseModelML){
+        var obj = userModel.userPurchaseModelML[i];
+        var tr = document.createElement("tr");
+        var itemCol = createListCol(obj.Product);
+        var sizeCol = createListCol(obj.Size);
+        var freqCol = createListCol(obj["Learned Frequencies"]);
+        tr.appendChild(itemCol);
+        tr.appendChild(sizeCol);
+        tr.appendChild(freqCol);
+        document.getElementById("mlListBody").appendChild(tr);
+        
+    }
+}
+function createList(json, time, userId){
     var i;
     for(i in json.data){
         var obj = json.data[i];
@@ -47,6 +77,20 @@ function createList(json, time){
         if(time == "later"){
             var daysLeftCol = createListCol(obj.Days_Left);
             tr.appendChild(daysLeftCol);
+        }
+        else if(time =="ignored"){
+            var ignoreButton = createIgnoreButton();
+            tr.appendChild(ignoreButton);
+            var close = document.getElementsByClassName("close");
+            var i;
+            for (i = 0; i < close.length; i++) {
+                close[i].onclick = function() {
+                    var div = this.parentElement;
+                    div.classList.add("ignored");
+                    submit("ignored", userId);
+                    div.parentElement.removeChild(div);
+                }
+            }
         }
         document.getElementById("listBody").appendChild(tr);
     }
@@ -83,6 +127,13 @@ function createListCol(value){
     thing.appendChild(textNode);
     return thing;
 }
+function createIgnoreButton(){
+    var span = document.createElement("th");
+    var txt = document.createTextNode("\u00D7");
+    span.className = "close";
+    span.appendChild(txt);
+    return span;
+}
 function addCheckboxEventListeners(className, rowClass){
     var checkboxList = document.getElementsByClassName(className);
     var i;
@@ -103,39 +154,41 @@ function addRowEventListener(){
     list.addEventListener('click', function(ev) {
     if(ev.target.tagName === 'TH'){
         var rowClasses = ev.target.parentElement.classList
-        if(rowClasses.length==0){
-            ev.target.parentElement.classList.toggle('bought');
-            ev.target.parentElement.childNodes[3].childNodes[0].disabled = true;
-            ev.target.parentElement.childNodes[4].childNodes[0].disabled = true;
-        }
-        else if (rowClasses.contains("bought")){
-            ev.target.parentElement.classList.toggle('bought');
-            ev.target.parentElement.childNodes[3].childNodes[0].disabled = false;
-            ev.target.parentElement.childNodes[4].childNodes[0].disabled = false;
-        }
+        ev.target.parentElement.classList.toggle('bought');
+            
+        
     }
     },false);
 }
-function submit(){
-    var boughtItems = document.getElementsByClassName("bought");
+function submit(type, userId){
+    var items = document.getElementsByClassName(type);
     var i;
-    for(i in boughtItems){
-        var productId = boughtItems[i].childNodes[0];
-        var itemName = boughtItems[i].childNodes[1].innerText;
-        var itemSize = boughtItems[i].childNodes[2].innerText;
-        var itemPrice = boughtItems[i].childNodes[3].innerText;
-        var purchases = new XMLHttpRequest();
-        purchases.open("POST", "https://adaptivejames.azurewebsites.net/purchase?user_id=10001&product_id=" + productId +"size=" + itemSize, true);
-        purchases.send;
+    for(i = 0; i < items.length;i++){
+        var productId = items[i].childNodes[0].innerText;
+        //var itemName = items[i].childNodes[1].innerText;
+        var itemSize = items[i].childNodes[2].innerText;
+        //var itemPrice = items[i].childNodes[3].innerText;
+        var request = new XMLHttpRequest();
+        if(type == "bought"){
+            request.open("POST", "https://adaptivejames.azurewebsites.net/purchase?user_id=" +userId + "&product_id=" + productId +"&size=" + itemSize+"&store=Aldi", true);
+        }
+        else if(type == "ignored"){
+            request.open("POST", "https://adaptivejames.azurewebsites.net/usermodel/update?user_id=" +userId + "&product_id=" + productId +"&size=" + itemSize, true);
+        }
+        request.send();
     }
     var regen = new XMLHttpRequest();
     regen.open("GET", "https://adaptivejames.azurewebsites.net/regen/bond")
+    regen.send();
+    regen.onreadystatechange = function(){
+        console.log(this.responseText);
+    }
 }
 //ALL OF THIS BELOW IS FOR NEW ROW ADDITION AND  SUBMISSION
 function createNewListItem(){
     var tr = document.createElement("tr");
     tr.setAttribute("id", "inputRow");
-    var idCol = createListCol("XXXX");
+    var idCol = createListInput("ProductId");
     var itemCol = createListInput("Name");
     var sizeCol = createListInput("Size");
     var priceCol = createListInput("Price");
@@ -182,24 +235,21 @@ function createListInput(name){
 }
 function submitNewRow(){
     var input = document.getElementById("inputRow");
+    var productId = document.getElementById("ProductId").value;
     var name = document.getElementById("Name").value;
     var size = document.getElementById("Size").value;
     var price = document.getElementById("Price").value;
 
     var tr = document.createElement("tr");
-    var idCol = createListCol("XXXX");
+    var idCol = createListCol(productId);
     var itemCol = createListCol(name);
     var sizeCol = createListCol(size);
     var priceCol = createListCol(price);
-    var notNowCol = createListCheckbox("notNow");
-    var notInterestedCol = createListCheckbox("notInterested");
     tr.appendChild(idCol);
     tr.appendChild(itemCol);
     tr.appendChild(sizeCol);
     tr.appendChild(priceCol);
-    tr.appendChild(notNowCol);
-    tr.appendChild(notInterestedCol);
-    
+    tr.classList.add('bought');
     input.parentNode.removeChild(input);
     document.getElementById("listBody").appendChild(tr);
 

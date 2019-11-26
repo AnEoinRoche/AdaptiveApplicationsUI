@@ -56,6 +56,9 @@ thead tr{
     align-items:center;
     padding:10px
 }
+button{
+    font-size: 20px;
+}
 #buyNow, #buyLater, #missed{
     width:600px;
     font-size: 40px;
@@ -65,4 +68,33 @@ thead tr{
     width:300px;
     font-size: 20px;
     padding:10px;
+}
+.card-panel {
+    width:50%;
+    padding:0px;
+    font-size:30px;
+    }
+    
+    .row .col.s2 {
+    width:83.3333333333%;
+    }
+    .col{
+    margin-left:33rem;
+    }
+    
+    
+    .titleContainer{
+        padding-bottom:30px;
+    }
+    div#one {
+        width: 50%;
+        height: 200px;
+       
+        float: left;
+    }
+    div#two {
+        
+        width: 50%;
+    height: 200px; 
+    float: right;
 }

@@ -5,7 +5,7 @@
   <script src = "listJS.js"></script>
   <script>
       window.onload = function(){
-          getData("today", 10011);
+          getData("today", 10002);
       }
   </script>
 </head>
@@ -13,7 +13,7 @@
     <div id = "listHeader" class = "header">
         <h2>Shopping List - Buy Now</h2>
     </div>
-    <div id = "back"><button onclick="location.href = 'index.html';">Back</button></div>
+    <div id = "back"><button onclick="location.href = 'index2.html';">Back</button></div>
     <div id = "newItem"><button onclick="createNewListItem()">New Item</button></div>
     <table id = list>
         <thead>
@@ -26,4 +26,5 @@
         </thead>
         <tbody id = "listBody"></tbody>
     </table>
+    <div class = "buttonDiv"><button onclick="submit('bought', 10002);">Submit</button></div>
 </div>
